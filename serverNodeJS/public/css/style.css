@@ -1,0 +1,19 @@
+body {
+    background-color: black;
+    color: #0F0;
+    font-family: 'Consolas', monospace;
+}
+
+header {
+    text-align: center;
+}
+
+video {
+
+    display: block;
+    margin: 50px auto;
+    width: 1280px;
+    height: 720px;
+    background: #0F0;
+
+}
