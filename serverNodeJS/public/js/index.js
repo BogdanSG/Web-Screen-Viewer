@@ -13,21 +13,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let serverConnection = new WebSocket('ws://localhost:8888');
 
+  let peerConnection;
+
   serverConnection.onmessage = message => {
 
-    let signal = JSON.parse(message.data);
+    let messObj = JSON.parse(message.data);
 
-    if(signal.sdp) {
+    if(messObj.messageType === 'RTC-Connection'){
 
-      peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp)).then(() => {
+      peerConnection = createRTC(peerConnectionConfig);
 
-        if(signal.sdp.type == 'offer') {
+      peerConnection.setRemoteDescription(new RTCSessionDescription(messObj.message)).then(() => {
+
+        if(messObj.message.type == 'offer') {
 
             peerConnection.createAnswer().then(description => {  
 
               peerConnection.setLocalDescription(description).then(() => {
 
-              serverConnection.send(JSON.stringify({'sdp': peerConnection.localDescription}));
+              serverConnection.send(JSON.stringify({'messageType' : 'RTC-Connection', 'message': peerConnection.localDescription}));
 
             }).catch(errorHandler);
 
@@ -38,13 +42,27 @@ document.addEventListener('DOMContentLoaded', () => {
       }).catch(errorHandler);
 
     }//if
-    else if(signal.ice) {
+    else if(messObj.messageType === 'RTC-ICE'){
 
-      peerConnection.addIceCandidate(new RTCIceCandidate(signal.ice)).catch(errorHandler);
+      if(peerConnection){
+
+        peerConnection.addIceCandidate(new RTCIceCandidate(messObj.message)).catch(errorHandler);
+
+      }//if
 
     }//else if
 
   };//onmessage
+
+});
+
+function errorHandler(error) {
+
+  console.log(error);
+
+}//errorHandler
+
+function createRTC(peerConnectionConfig){
 
   let peerConnection = new RTCPeerConnection(peerConnectionConfig);
 
@@ -64,11 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   };//ontrack
 
+  return peerConnection;
 
-});
-
-function errorHandler(error) {
-
-  console.log(error);
-
-}//errorHandler
+}//createRTC

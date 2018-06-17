@@ -1,5 +1,9 @@
 {
     "author": "SG",
+    "background": {
+        "persistent": true,
+        "scripts": [ "bg/bg.js", "bg/bg-ws._connection.js", "bg/bg-localMessage.js"]
+     },
     "browser_action": {
        "default_icon": "icon.png",
        "default_popup": "main.html",
