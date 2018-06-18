@@ -2,6 +2,34 @@
   
 function OnchooseDesktopMedia(sourceId, opts) {
 
+  function Initialization(){
+
+    const constraints = {
+      audio: false,
+      video: {
+        mandatory: {
+          chromeMediaSourceId: sourceId,
+          chromeMediaSource: 'desktop',
+          maxWidth: window.screen.width,
+          maxHeight: window.screen.height
+        },
+        optional: []
+      }
+    };
+  
+    if(navigator.mediaDevices.getUserMedia) {
+  
+      navigator.mediaDevices.getUserMedia(constraints).then(getUserMediaSuccess).catch(errorHandler);
+  
+    }//if
+    else {
+  
+      console.log('Your browser does not support getUserMedia API');
+      
+    }//else
+
+  }//Initialization
+
     if(!serverConnection){
 
         serverConnection = new WebSocket('ws://localhost:8888');
@@ -27,30 +55,19 @@ function OnchooseDesktopMedia(sourceId, opts) {
             serverConnection = null;
         };
 
-    }//if
+        serverConnection.onopen = () => {
 
-    const constraints = {
-      audio: false,
-      video: {
-        mandatory: {
-          chromeMediaSourceId: sourceId,
-          chromeMediaSource: 'desktop',
-          maxWidth: window.screen.width,
-          maxHeight: window.screen.height
-        },
-        optional: []
-      }
-    };
-  
-    if(navigator.mediaDevices.getUserMedia) {
-  
-      navigator.mediaDevices.getUserMedia(constraints).then(getUserMediaSuccess).catch(errorHandler);
-  
+          serverConnection.send(JSON.stringify({'messageType': 'Recorder', 'message': ''}));
+
+          Initialization();
+
+        };
+
     }//if
-    else {
-  
-      console.log('Your browser does not support getUserMedia API');
-      
+    else{
+
+      Initialization();
+
     }//else
   
 }//OnchooseDesktopMedia

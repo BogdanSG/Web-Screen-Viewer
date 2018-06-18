@@ -5,7 +5,7 @@ const WS_Port = JSON.parse(fs.readFileSync('./settings.json').toString()).WS_Por
 
 const WS_Server = new WebSocket.Server({ port: WS_Port });
 
-let Recorder;
+let Recorder = null;
 
 WS_Server.on('connection', ws => {
 
@@ -19,29 +19,53 @@ WS_Server.on('connection', ws => {
 
     let messObj = JSON.parse(message);
 
-    // if(messObj.messageType === 'recorder'){
+    console.log(`MESSAGE : ${messObj.messageType}`);
 
-    //   Recorder = messObj.message;
+    if(!Recorder){
+      
+      if(messObj.messageType === 'Recorder'){
 
-    // }//if
+        Recorder = {'ws': ws, 'Address': `${ws._socket.remoteAddress}:${ws._socket.remotePort}`};
 
-    if(messObj.messageType === 'RTC-Connection' || messObj.messageType === 'RTC-ICE'){
+        Recorder.ws.on('close', code => {
 
-      WS_Server.clients.forEach(client => {
+          Recorder = null;
 
-        if(`${ws._socket.remoteAddress}:${ws._socket.remotePort}` !== `${client._socket.remoteAddress}:${client._socket.remotePort}`){
-  
-          if(client.readyState === WebSocket.OPEN) {
-  
-            client.send(message);
-    
-          }//if
-  
-        }//if
-  
-      });
+        });
+
+      }//if
 
     }//if
+    else{
+
+      if(messObj.messageType === 'RTC-Connection' || messObj.messageType === 'RTC-ICE'){
+
+        if(Recorder.Address !== `${ws._socket.remoteAddress}:${ws._socket.remotePort}`){
+  
+          Recorder.ws.send(message);
+  
+        }//if
+        else{
+  
+          WS_Server.clients.forEach(client => {
+    
+            if(Recorder.Address !== `${client._socket.remoteAddress}:${client._socket.remotePort}`){
+      
+              if(client.readyState === WebSocket.OPEN) {
+      
+                client.send(message);
+        
+              }//if
+      
+            }//if
+      
+          });
+  
+        }//else
+  
+      }//if
+
+    }//else
 
   }); 
 
