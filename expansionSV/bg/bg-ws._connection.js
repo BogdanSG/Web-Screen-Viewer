@@ -19,7 +19,7 @@ function OnchooseDesktopMedia(sourceId, opts) {
   
     if(navigator.mediaDevices.getUserMedia) {
   
-      navigator.mediaDevices.getUserMedia(constraints).then(getUserMediaSuccess).catch(errorHandler);
+      navigator.mediaDevices.getUserMedia(constraints).then(s => {stream = s;}).catch(errorHandler);
   
     }//if
     else {
@@ -38,7 +38,34 @@ function OnchooseDesktopMedia(sourceId, opts) {
         
             let messObj = JSON.parse(message.data);
         
-            if(messObj.messageType === 'RTC-Connection') {
+            if(messObj.messageType === 'Send-RTC'){
+
+              peerConnection = new RTCPeerConnection(peerConnectionConfig);
+  
+              peerConnection.addStream(stream);
+            
+              peerConnection.onicecandidate = event => {
+            
+                if(event.candidate != null) {
+            
+                  serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate}));
+            
+                }//if
+            
+              };
+            
+              peerConnection.createOffer().then(description => {
+            
+                peerConnection.setLocalDescription(description).then(() => {
+            
+                  serverConnection.send(JSON.stringify({'messageType': 'RTC-Connection', 'message': peerConnection.localDescription}));
+            
+                }).catch(errorHandler);
+            
+              }).catch(errorHandler);
+
+            }//if
+            else if(messObj.messageType === 'RTC-Connection') {
         
                 peerConnection.setRemoteDescription(new RTCSessionDescription(messObj.message)).catch(errorHandler);
         
@@ -69,33 +96,7 @@ function OnchooseDesktopMedia(sourceId, opts) {
       Initialization();
 
     }//else
+
+    serverConnection.send(JSON.stringify({'messageType': 'Stream-Start', 'message': ''}));
   
 }//OnchooseDesktopMedia
-  
-function getUserMediaSuccess(stream) {
-  
-    peerConnection = new RTCPeerConnection(peerConnectionConfig);
-  
-    peerConnection.addStream(stream);
-  
-    peerConnection.onicecandidate = event => {
-  
-      if(event.candidate != null) {
-  
-        serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate}));
-  
-      }//if
-  
-    };
-  
-    peerConnection.createOffer().then(description => {
-  
-      peerConnection.setLocalDescription(description).then(() => {
-  
-        serverConnection.send(JSON.stringify({'messageType': 'RTC-Connection', 'message': peerConnection.localDescription}));
-  
-      }).catch(errorHandler);
-  
-    }).catch(errorHandler);
-  
-}//getUserMediaSuccess

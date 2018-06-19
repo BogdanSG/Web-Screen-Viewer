@@ -13,7 +13,11 @@ WS_Server.on('connection', ws => {
 
   console.log(WS_Server.clients.size);
 
-  //ws.send(JSON.stringify({'messageType': 'localAddress', 'message':`${ws._socket.remoteAddress}:${ws._socket.remotePort}`}));
+  if(Recorder && WS_Server.clients.size === 2){
+
+    Recorder.ws.send(JSON.stringify({'messageType': 'Send-RTC', 'message': ''}));
+
+  }//if
 
   ws.on('message', message => {
 
@@ -33,6 +37,16 @@ WS_Server.on('connection', ws => {
 
         });
 
+        setTimeout(() => {
+
+          if(WS_Server.clients.size >= 2){
+
+            Recorder.ws.send(JSON.stringify({'messageType': 'Send-RTC', 'message': ''}));
+  
+          }//if
+
+        }, 300);
+
       }//if
 
     }//if
@@ -47,23 +61,30 @@ WS_Server.on('connection', ws => {
         }//if
         else{
   
-          WS_Server.clients.forEach(client => {
+          let client = WS_Server.WS_GetClientByIndex(0);
+
+          if(client.readyState === WebSocket.OPEN) {
+      
+            client.send(message);
     
-            if(Recorder.Address !== `${client._socket.remoteAddress}:${client._socket.remotePort}`){
-      
-              if(client.readyState === WebSocket.OPEN) {
-      
-                client.send(message);
-        
-              }//if
-      
-            }//if
-      
-          });
+          }//if
   
         }//else
   
       }//if
+      else if(messObj.messageType === 'Stream-Start'){
+
+        setTimeout(() => {
+
+          if(WS_Server.clients.size >= 2){
+
+            Recorder.ws.send(JSON.stringify({'messageType': 'Send-RTC', 'message': ''}));
+  
+          }//if
+
+        }, 300);
+
+      }//else if
 
     }//else
 
@@ -71,5 +92,60 @@ WS_Server.on('connection', ws => {
 
   
 });
+
+WS_Server.WS_GetClientByIndex = function(index){
+
+  if(Recorder){
+
+    if(index < 0 || index >= WS_Server.clients.size - 1){
+
+      return null;
+  
+    }//if
+  
+    let i = 0;
+  
+    for (let ws of WS_Server.clients.values()) {
+      
+      if(Recorder.Address !== `${ws._socket.remoteAddress}:${ws._socket.remotePort}`){
+
+        if(i === index){
+  
+          return ws;
+    
+        }//if
+
+        i++;
+
+      }//if
+  
+    }//for
+
+  }//if
+  else{
+
+    if(index < 0 || index >= WS_Server.clients.size){
+
+      return null;
+  
+    }//if
+  
+    let i = 0;
+  
+    for (let ws of WS_Server.clients.values()) {
+  
+      if(i === index){
+  
+        return ws;
+  
+      }//if
+
+      i++;
+  
+    }//for
+
+  }//else
+
+}//WS_GetClientByID
 
 module.exports = WS_Port;

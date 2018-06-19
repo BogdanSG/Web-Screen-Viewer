@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(messObj.messageType === 'RTC-Connection'){
 
-      peerConnection = createRTC(peerConnectionConfig);
+      peerConnection = createRTC(peerConnectionConfig, serverConnection);
 
       peerConnection.setRemoteDescription(new RTCSessionDescription(messObj.message)).then(() => {
 
@@ -62,7 +62,7 @@ function errorHandler(error) {
 
 }//errorHandler
 
-function createRTC(peerConnectionConfig){
+function createRTC(peerConnectionConfig, serverConnection){
 
   let peerConnection = new RTCPeerConnection(peerConnectionConfig);
 
@@ -70,7 +70,7 @@ function createRTC(peerConnectionConfig){
 
     if(event.candidate != null) {
 
-      serverConnection.send(JSON.stringify({'ice': event.candidate}));
+      serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate}));
 
     }//if
 
