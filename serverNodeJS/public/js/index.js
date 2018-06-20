@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let remoteVideo = document.getElementById('remoteVideo');
 
-  let serverConnection = new WebSocket('ws://localhost:8888');
+  let serverConnection = new WebSocket(`ws://${window.location.hostname}:8888`);
 
   let peerConnection;
 
