@@ -1,5 +1,5 @@
 {
     "WS_Port": 8888,
-    "HTTP_Port": 80,
-    "IP": "localhost"
+    "HTTP_Port": 3000,
+    "IP": "192.168.1.43"
 }

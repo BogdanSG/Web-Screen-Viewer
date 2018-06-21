@@ -7,6 +7,12 @@ const WS_Server = new WebSocket.Server({ port: WS_Port });
 
 let Recorder = null;
 
+WebSocket.prototype.GetID = function(){
+
+  return `${this._socket.remoteAddress}:${this._socket.remotePort}`;
+
+}//function
+
 WS_Server.on('connection', ws => {
 
   console.log(`${ws._socket.remoteAddress}:${ws._socket.remotePort} Connection!`);
@@ -29,7 +35,7 @@ WS_Server.on('connection', ws => {
       
       if(messObj.messageType === 'Recorder'){
 
-        Recorder = {'ws': ws, 'Address': `${ws._socket.remoteAddress}:${ws._socket.remotePort}`};
+        Recorder = {'ws': ws, 'ID': ws.GetID()};
 
         Recorder.ws.on('close', code => {
 
@@ -54,7 +60,7 @@ WS_Server.on('connection', ws => {
 
       if(messObj.messageType === 'RTC-Connection' || messObj.messageType === 'RTC-ICE'){
 
-        if(Recorder.Address !== `${ws._socket.remoteAddress}:${ws._socket.remotePort}`){
+        if(Recorder.ID !== ws.GetID()){
   
           Recorder.ws.send(message);
   
@@ -63,10 +69,14 @@ WS_Server.on('connection', ws => {
   
           let client = WS_Server.WS_GetClientByIndex(0);
 
-          if(client.readyState === WebSocket.OPEN) {
+          if(client){
+
+            if(client.readyState === WebSocket.OPEN) {
       
-            client.send(message);
-    
+              client.send(message);
+      
+            }//if
+
           }//if
   
         }//else
@@ -107,7 +117,7 @@ WS_Server.WS_GetClientByIndex = function(index){
   
     for (let ws of WS_Server.clients.values()) {
       
-      if(Recorder.Address !== `${ws._socket.remoteAddress}:${ws._socket.remotePort}`){
+      if(Recorder.ID !== ws.GetID()){
 
         if(i === index){
   
@@ -122,30 +132,41 @@ WS_Server.WS_GetClientByIndex = function(index){
     }//for
 
   }//if
-  else{
-
-    if(index < 0 || index >= WS_Server.clients.size){
-
-      return null;
   
-    }//if
-  
-    let i = 0;
-  
-    for (let ws of WS_Server.clients.values()) {
-  
-      if(i === index){
-  
-        return ws;
-  
-      }//if
-
-      i++;
-  
-    }//for
-
-  }//else
+  return null;
 
 }//WS_GetClientByID
+
+WS_Server.WS_GetNeighbors = function(ws){
+
+  let previousWS = null;
+  let nextWS = null;
+  let stop = false;
+
+  for (let item of WS_Server.clients.values()) {
+
+    if(item.GetID() === ws.GetID()){
+
+      stop = true;
+
+    }//if
+    else if(stop){
+
+      nextWS = item;
+
+      break;
+
+    }//else if
+    else{
+
+      previousWS = item;
+      
+    }//else
+
+  }//for
+
+  return {'previousWS': previousWS, 'nextWS': nextWS};
+
+}//WS_GetNeighbors
 
 module.exports = WS_Port;
