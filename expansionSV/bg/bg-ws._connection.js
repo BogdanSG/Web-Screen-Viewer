@@ -37,6 +37,8 @@ function OnchooseDesktopMedia(sourceId, opts) {
         serverConnection.onmessage = message => {  
         
             let messObj = JSON.parse(message.data);
+
+            ClientID = messObj.ClientID;
         
             if(messObj.messageType === 'Send-RTC'){
 
@@ -48,7 +50,7 @@ function OnchooseDesktopMedia(sourceId, opts) {
             
                 if(event.candidate != null) {
             
-                  serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate}));
+                  serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate, 'ClientID': ClientID}));
             
                 }//if
             
@@ -58,7 +60,7 @@ function OnchooseDesktopMedia(sourceId, opts) {
             
                 peerConnection.setLocalDescription(description).then(() => {
             
-                  serverConnection.send(JSON.stringify({'messageType': 'RTC-Connection', 'message': peerConnection.localDescription}));
+                  serverConnection.send(JSON.stringify({'messageType': 'RTC-Connection', 'message': peerConnection.localDescription, 'ClientID': ClientID}));
             
                 }).catch(errorHandler);
             

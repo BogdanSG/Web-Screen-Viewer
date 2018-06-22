@@ -10,6 +10,7 @@ var peerConnectionConfig = {
 var serverConnection;
 var peerConnection;
 var stream;
+var ClientID;
 
 function errorHandler(error) {
 

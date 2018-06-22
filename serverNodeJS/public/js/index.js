@@ -1,5 +1,7 @@
 'use strict';
 
+let ClientID;
+
 document.addEventListener('DOMContentLoaded', () => {
 
   const peerConnectionConfig = {
@@ -19,6 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let messObj = JSON.parse(message.data);
 
+    ClientID = messObj.ClientID;
+
     if(messObj.messageType === 'RTC-Connection'){
 
       peerConnection = createRTC(peerConnectionConfig, serverConnection);
@@ -31,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
               peerConnection.setLocalDescription(description).then(() => {
 
-              serverConnection.send(JSON.stringify({'messageType' : 'RTC-Connection', 'message': peerConnection.localDescription}));
+              serverConnection.send(JSON.stringify({'messageType' : 'RTC-Connection', 'message': peerConnection.localDescription, 'ClientID': ClientID}));
 
             }).catch(errorHandler);
 
@@ -70,7 +74,7 @@ function createRTC(peerConnectionConfig, serverConnection){
 
     if(event.candidate != null) {
 
-      serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate}));
+      serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate, 'ClientID': ClientID}));
 
     }//if
 

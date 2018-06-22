@@ -61,8 +61,16 @@ WS_Server.on('connection', ws => {
       if(messObj.messageType === 'RTC-Connection' || messObj.messageType === 'RTC-ICE'){
 
         if(Recorder.ID !== ws.GetID()){
-  
-          Recorder.ws.send(message);
+
+          let wsTo = WS_Server.WS_GetWSByID(messObj.ClientID);
+
+          if(wsTo){
+
+            messObj.ClientID = ws.GetID();
+
+            wsTo.send(JSON.stringify(messObj));
+
+          }//if
   
         }//if
         else{
@@ -72,8 +80,10 @@ WS_Server.on('connection', ws => {
           if(client){
 
             if(client.readyState === WebSocket.OPEN) {
+
+              messObj.ClientID = Recorder.ID;
       
-              client.send(message);
+              client.send(JSON.stringify(messObj));
       
             }//if
 
@@ -136,6 +146,22 @@ WS_Server.WS_GetClientByIndex = function(index){
   return null;
 
 }//WS_GetClientByID
+
+WS_Server.WS_GetWSByID = function(ID){
+
+  for (let ws of WS_Server.clients.values()) {
+      
+    if(ID === ws.GetID()){
+
+      return ws;
+
+    }//if
+
+  }//for
+  
+  return null;
+
+}//WS_GetWSByID
 
 WS_Server.WS_GetNeighbors = function(ws){
 
