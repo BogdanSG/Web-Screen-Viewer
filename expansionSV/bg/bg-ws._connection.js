@@ -11,7 +11,7 @@ function OnchooseDesktopMedia(sourceId, opts) {
           chromeMediaSourceId: sourceId,
           chromeMediaSource: 'desktop',
           maxWidth: window.screen.width,
-          maxHeight: window.screen.height
+          maxHeight: window.screen.height,
         },
         optional: []
       }
@@ -50,7 +50,7 @@ function OnchooseDesktopMedia(sourceId, opts) {
             
                 if(event.candidate != null) {
             
-                  serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate, 'ClientID': ClientID}));
+                  serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate, 'ClientID': ClientID, 'Queue': 'Prev'}));
             
                 }//if
             
@@ -60,7 +60,7 @@ function OnchooseDesktopMedia(sourceId, opts) {
             
                 peerConnection.setLocalDescription(description).then(() => {
             
-                  serverConnection.send(JSON.stringify({'messageType': 'RTC-Connection', 'message': peerConnection.localDescription, 'ClientID': ClientID}));
+                  serverConnection.send(JSON.stringify({'messageType': 'RTC-Connection', 'message': peerConnection.localDescription, 'ClientID': ClientID, 'Queue': 'Prev'}));
             
                 }).catch(errorHandler);
             

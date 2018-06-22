@@ -1,13 +1,29 @@
 'use strict';
 
-let ClientID;
+let ClientID = null;
+let stream = null;
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  const peerConnectionConfig = {
+  let peerConnectionConfig = {
     'iceServers': [
       {'urls': 'stun:stun.stunprotocol.org:3478'},
       {'urls': 'stun:stun.l.google.com:19302'},
+      {'urls': 'stun:stun.l.google.com:19302'},
+      {'urls': 'stun:stun1.l.google.com:19302'},
+      {'urls': 'stun:stun2.l.google.com:19302'},
+      {'urls': 'stun:stun3.l.google.com:19302'},
+      {'urls': 'stun:stun4.l.google.com:19302'},
+      {
+        'urls': 'turn:192.158.29.39:3478?transport=udp',
+        'credential': 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+        'username': '28224511:1379330808'
+      },
+      {
+        'urls': 'turn:192.158.29.39:3478?transport=tcp',
+        'credential': 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+        'username': '28224511:1379330808'
+      }
     ]
   };
 
@@ -15,7 +31,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let serverConnection = new WebSocket(`ws://${window.location.hostname}:8888`);
 
-  let peerConnection;
+  let peerConnectionPrev;
+
+  let peerConnectionNext;
 
   serverConnection.onmessage = message => {
 
@@ -23,36 +41,77 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ClientID = messObj.ClientID;
 
-    if(messObj.messageType === 'RTC-Connection'){
+    if(messObj.messageType === 'Send-RTC'){
 
-      peerConnection = createRTC(peerConnectionConfig, serverConnection);
+      peerConnectionNext = new RTCPeerConnection(peerConnectionConfig);
 
-      peerConnection.setRemoteDescription(new RTCSessionDescription(messObj.message)).then(() => {
-
-        if(messObj.message.type == 'offer') {
-
-            peerConnection.createAnswer().then(description => {  
-
-              peerConnection.setLocalDescription(description).then(() => {
-
-              serverConnection.send(JSON.stringify({'messageType' : 'RTC-Connection', 'message': peerConnection.localDescription, 'ClientID': ClientID}));
-
-            }).catch(errorHandler);
-
-          }).catch(errorHandler);
-
+      peerConnectionNext.addStream(stream);
+    
+      peerConnectionNext.onicecandidate = event => {
+    
+        if(event.candidate != null) {
+    
+          serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate, 'ClientID': ClientID, 'Queue': 'Prev'}));
+    
         }//if
-
+    
+      };
+    
+      peerConnectionNext.createOffer().then(description => {
+    
+        peerConnectionNext.setLocalDescription(description).then(() => {
+    
+          serverConnection.send(JSON.stringify({'messageType': 'RTC-Connection', 'message': peerConnectionNext.localDescription, 'ClientID': ClientID, 'Queue': 'Prev'}));
+    
+        }).catch(errorHandler);
+    
       }).catch(errorHandler);
+
+    }//if
+    else if(messObj.messageType === 'RTC-Connection'){
+
+      if(messObj.Queue === 'Prev'){
+
+        peerConnectionPrev = createRTC(peerConnectionConfig, serverConnection);
+
+        peerConnectionPrev.setRemoteDescription(new RTCSessionDescription(messObj.message)).then(() => {
+  
+          if(messObj.message.type == 'offer') {
+  
+            peerConnectionPrev.createAnswer().then(description => {  
+  
+              peerConnectionPrev.setLocalDescription(description).then(() => {
+  
+                serverConnection.send(JSON.stringify({'messageType' : 'RTC-Connection', 'message': peerConnectionPrev.localDescription, 'ClientID': ClientID, 'Queue': 'Next'}));
+  
+              }).catch(errorHandler);
+  
+            }).catch(errorHandler);
+  
+          }//if
+  
+        }).catch(errorHandler);
+
+      }//if
+      else if(messObj.Queue === 'Next'){
+
+        peerConnectionNext.setRemoteDescription(new RTCSessionDescription(messObj.message)).catch(errorHandler);
+
+      }//else if
 
     }//if
     else if(messObj.messageType === 'RTC-ICE'){
 
-      if(peerConnection){
+      if(peerConnectionPrev && messObj.Queue === 'Prev'){
 
-        peerConnection.addIceCandidate(new RTCIceCandidate(messObj.message)).catch(errorHandler);
+        peerConnectionPrev.addIceCandidate(new RTCIceCandidate(messObj.message)).catch(errorHandler);
 
       }//if
+      else if(peerConnectionNext && messObj.Queue === 'Next'){
+
+        peerConnectionNext.addIceCandidate(new RTCIceCandidate(messObj.message)).catch(errorHandler);
+
+      }//else if
 
     }//else if
 
@@ -74,7 +133,7 @@ function createRTC(peerConnectionConfig, serverConnection){
 
     if(event.candidate != null) {
 
-      serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate, 'ClientID': ClientID}));
+      serverConnection.send(JSON.stringify({'messageType': 'RTC-ICE', 'message': event.candidate, 'ClientID': ClientID , 'Queue': 'Next'}));
 
     }//if
 
@@ -82,7 +141,9 @@ function createRTC(peerConnectionConfig, serverConnection){
 
   peerConnection.ontrack = event => {
 
-    remoteVideo.srcObject = event.streams[0];
+    stream = event.streams[0];
+
+    remoteVideo.srcObject = stream;
 
   };//ontrack
 

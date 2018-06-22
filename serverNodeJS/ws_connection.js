@@ -13,6 +13,8 @@ WebSocket.prototype.GetID = function(){
 
 }//function
 
+WebSocket.prototype.Index = -1; 
+
 WS_Server.on('connection', ws => {
 
   console.log(`${ws._socket.remoteAddress}:${ws._socket.remotePort} Connection!`);
@@ -24,6 +26,19 @@ WS_Server.on('connection', ws => {
     Recorder.ws.send(JSON.stringify({'messageType': 'Send-RTC', 'message': ''}));
 
   }//if
+  else if(Recorder && WS_Server.clients.size >= 3){
+
+    let client = WS_Server.WS_GetClientByIndex(WS_Server.clients.size - 3);
+
+    if(client){
+
+      client.send(JSON.stringify({'messageType': 'Send-RTC', 'message': '', 'ClientID': ws.GetID(), 'Queue': 'Next'}));
+
+    }//if
+
+  }//else if
+
+  ws.Index = WS_Server.WS_GetClientIndexByWS(ws);
 
   ws.on('message', message => {
 
@@ -108,10 +123,97 @@ WS_Server.on('connection', ws => {
 
     }//else
 
-  }); 
+  });
+
+  ws.on('close', () => {
+
+    console.log(`Disc Index ${ws.Index}`);
+
+    if(Recorder){
+
+      if(ws.GetID() === Recorder.ID){
+
+        console.log('Recorder Disconnected');
+
+      }//if      
+      else if(ws.Index === 0 && WS_Server.clients.size >= 2){
+
+        WS_Server.WS_GetClientByIndex(ws.Index).Index = ws.Index;
+
+        Recorder.ws.send(JSON.stringify({'messageType': 'Send-RTC', 'message': ''}));
+
+      }//if
+      else if(WS_Server.clients.size >= 3){
+
+        let clientPrev = WS_Server.WS_GetClientByIndex(ws.Index - 1);
+
+        let clientNext = WS_Server.WS_GetClientByIndex(ws.Index);        
+
+        if(clientPrev && clientNext){
+
+          clientPrev.Index = ws.Index - 1;
+
+          clientNext.Index = ws.Index;
+
+          console.log('true');
+
+          clientPrev.send(JSON.stringify({'messageType': 'Send-RTC', 'message': '', 'ClientID': clientNext.GetID(), 'Queue': 'Next'}));
+
+        }//if
+
+      }//else
+
+    }//if
+
+  });
 
   
 });
+
+WS_Server.WS_GetClientIndexByWS = function(ws){
+
+  if(Recorder){
+  
+    let i = 0;
+  
+    for (let value of WS_Server.clients.values()) {
+      
+      if(Recorder.ID !== value.GetID()){
+
+        if(value.GetID() === ws.GetID()){
+
+          return i;
+
+        }//if
+
+        i++;
+
+      }//if
+  
+    }//for
+
+  }//if
+  else{
+
+    let i = 0;
+  
+    for (let value of WS_Server.clients.values()) {
+      
+      if(value.GetID() === ws.GetID()){
+
+        return i;
+
+      }//if
+
+      i++;
+  
+    }//for
+
+  }//else
+  
+  return null;
+
+}//WS_GetClientIndexByWS
 
 WS_Server.WS_GetClientByIndex = function(index){
 
@@ -142,7 +244,7 @@ WS_Server.WS_GetClientByIndex = function(index){
     }//for
 
   }//if
-  
+
   return null;
 
 }//WS_GetClientByID
