@@ -7,13 +7,15 @@ const WS_Server = new WebSocket.Server({ port: WS_Port });
 
 let Recorder = null;
 
+let Disconnect = false;
+
 WebSocket.prototype.GetID = function(){
 
   return `${this._socket.remoteAddress}:${this._socket.remotePort}`;
 
 }//function
 
-WebSocket.prototype.Index = -1; 
+WebSocket.prototype.Index = -1;
 
 WS_Server.on('connection', ws => {
 
@@ -127,41 +129,43 @@ WS_Server.on('connection', ws => {
 
   ws.on('close', () => {
 
-    console.log(`Disc Index ${ws.Index}`);
+    //!BETA
 
-    if(Recorder){
+    if(!Disconnect){
 
-      if(ws.GetID() === Recorder.ID){
+      Disconnect = true;
 
-        console.log('Recorder Disconnected');
+      console.log(`Disc Index ${ws.Index}`);
 
-      }//if      
-      else if(ws.Index === 0 && WS_Server.clients.size >= 2){
+      if(Recorder){
 
-        WS_Server.WS_GetClientByIndex(ws.Index).Index = ws.Index;
+        let index = 1;
 
-        Recorder.ws.send(JSON.stringify({'messageType': 'Send-RTC', 'message': ''}));
+        let clients = [];
 
+        for(let i = 0; i < WS_Server.clients.size - 1; i++){
+
+          clients.push(WS_Server.WS_GetClientByIndex(i));
+
+        }//for
+
+        clients.forEach(client => {
+
+          if(client.readyState === WebSocket.OPEN) {
+
+            client.send(JSON.stringify({'messageType': 'ReConnect', 'message': index * 300}));
+
+            client.close();
+
+            index++;
+    
+          }//if
+
+        });
+  
       }//if
-      else if(WS_Server.clients.size >= 3){
 
-        let clientPrev = WS_Server.WS_GetClientByIndex(ws.Index - 1);
-
-        let clientNext = WS_Server.WS_GetClientByIndex(ws.Index);        
-
-        if(clientPrev && clientNext){
-
-          clientPrev.Index = ws.Index - 1;
-
-          clientNext.Index = ws.Index;
-
-          console.log('true');
-
-          clientPrev.send(JSON.stringify({'messageType': 'Send-RTC', 'message': '', 'ClientID': clientNext.GetID(), 'Queue': 'Next'}));
-
-        }//if
-
-      }//else
+      Disconnect = false;
 
     }//if
 
@@ -169,6 +173,35 @@ WS_Server.on('connection', ws => {
 
   
 });
+
+WS_Server.ReSetIndices = function(){
+
+  if(Recorder){
+
+    for(let i = 0; i < WS_Server.clients.size - 1; i++){
+
+      let ws = WS_Server.WS_GetClientByIndex(i);
+
+      if(ws){
+
+        ws.Index = i;
+
+      }//if
+
+    }//for
+
+  }//if
+
+}//ReSetIndices
+
+WS_Server.ReConnectClientsByIndex = function(index = 1){
+
+  if(index >= 1){
+
+
+  }//if
+
+}//ReConnectClientsByIndex
 
 WS_Server.WS_GetClientIndexByWS = function(ws){
 

@@ -1,0 +1,16 @@
+{
+  "name": "servernodejs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "http_connection.js",
+  "dependencies": {},
+  "devDependencies": {
+    "ws": "^5.2.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "SG",
+  "license": "ISC"
+}

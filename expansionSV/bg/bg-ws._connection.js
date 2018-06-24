@@ -12,15 +12,31 @@ function OnchooseDesktopMedia(sourceId, opts) {
           chromeMediaSource: 'desktop',
           maxWidth: window.screen.width,
           maxHeight: window.screen.height,
+          minFrameRate: 60
         },
         optional: []
       }
     };
+
+    //NOT WORK!!!
+
+    // const constraints = {
+    //   audio: false,
+    //   video: {
+    //       width: {max: window.screen.width},
+    //       height: {max: window.screen.height},
+    //       frameRate: {ideal: 60, min: 20},
+    //       deviceId: {exact: [sourceId]},
+    //       mediaStreamSource: {exact: ['desktop']}
+    //     }
+    // };
   
     if(navigator.mediaDevices.getUserMedia) {
   
-      navigator.mediaDevices.getUserMedia(constraints).then(s => {stream = s;}).catch(errorHandler);
+      //navigator.mediaDevices.getUserMedia(constraints).then(s => {stream = s;}).catch(errorHandler);
   
+      navigator.webkitGetUserMedia(constraints, s => {stream = s;}, errorHandler);
+
     }//if
     else {
   

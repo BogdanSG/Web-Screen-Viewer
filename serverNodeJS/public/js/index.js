@@ -35,13 +35,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let peerConnectionNext;
 
-  serverConnection.onmessage = message => {
+  function WS_onmessage(message){
 
     let messObj = JSON.parse(message.data);
 
     ClientID = messObj.ClientID;
+    
+    if(messObj.messageType === 'ReConnect'){
 
-    if(messObj.messageType === 'Send-RTC'){
+      setTimeout(() => {
+
+        serverConnection = new WebSocket(`ws://${window.location.hostname}:8888`);
+
+        serverConnection.onmessage = WS_onmessage;
+
+      }, messObj.message);
+
+    }//if
+    else if(messObj.messageType === 'Send-RTC'){
 
       peerConnectionNext = new RTCPeerConnection(peerConnectionConfig);
 
@@ -116,6 +127,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }//else if
 
   };//onmessage
+
+  serverConnection.onmessage = WS_onmessage;
+
+  // remoteVideo.addEventListener('playing', () => {
+
+  //   if(serverConnection){
+  
+  //     console.log('playing');
+
+  //     //serverConnection.send(JSON.stringify({'messageType': 'Play-OK', 'message': ''}));
+  
+  //   }//if
+  
+  // });
 
 });
 
